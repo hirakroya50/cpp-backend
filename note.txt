@@ -1,0 +1,15 @@
+# configure :
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+# compile :
+    cmake --build build -j 2
+# start the server : 
+    ./build/cpp_backend
+
+
+#start with watch start:
+    watchexec --restart \
+    --watch src \
+    --watch CMakeLists.txt \
+    --debounce 500ms \
+    --shell bash \
+    -- 'cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug && cmake --build build -j 2 && exec ./build/cpp_backend'
