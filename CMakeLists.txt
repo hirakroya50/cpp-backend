@@ -7,6 +7,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(Drogon CONFIG REQUIRED)
+find_package(PostgreSQL REQUIRED)
+find_package(Threads REQUIRED)
 
 add_executable(cpp_backend src/main.cpp)
 
@@ -16,4 +18,8 @@ target_compile_options(cpp_backend PRIVATE
     -Wpedantic
 )
 
-target_link_libraries(cpp_backend PRIVATE Drogon::Drogon)
+target_link_libraries(cpp_backend PRIVATE
+    Drogon::Drogon
+    PostgreSQL::PostgreSQL
+    Threads::Threads
+)
