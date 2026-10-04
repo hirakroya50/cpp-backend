@@ -3,6 +3,56 @@
 Drogon HTTP server + libpq PostgreSQL client + Swagger UI.
 Uses the existing public.users and public.products tables; creates no tables and changes no schema.
 
+## Run with Docker Compose
+
+Docker Desktop (Mac/Windows) or Docker Engine with the Compose plugin (Linux) is required.
+Keep your existing `.env`, or copy `.env.example` to `.env` and supply your Neon URI.
+Compose loads `.env` automatically. Credentials are supplied at runtime and excluded from
+the image and build context. No local PostgreSQL container is needed.
+
+```bash
+docker compose up -d --build
+docker compose ps
+curl -i http://localhost:8080/health
+curl -i http://localhost:8080/ready
+```
+
+Swagger: http://localhost:8080/docs. If port 8080 is occupied, add `HTTP_PORT=8081`
+to `.env` and use port 8081 in these URLs.
+
+```bash
+docker compose logs -f backend
+docker compose down
+```
+
+The image uses a multi-stage Alpine build, static Drogon/Trantor libraries, a
+size-optimized stripped executable, and only required runtime packages. Compilers,
+source, Git, and development headers remain in the builder. The runtime runs as
+UID 10001 with a read-only filesystem. BusyBox's included `wget` provides the health
+check without installing curl. Drogon's temporary upload directories use `/tmp`
+via `UPLOAD_PATH=/tmp/uploads`. `/health` checks the process; `/ready` checks Neon.
+
+For deployment, copy the project to a Docker host, configure `.env`, and run the
+same Compose command. By default, the published port binds to the host's loopback
+interface. Place a reverse proxy on that host in front of it for HTTPS. Set
+`BIND_ADDRESS` in `.env` to a specific host interface or `0.0.0.0` when you need
+external access. The API currently has no authentication; add access control before
+exposing its user data publicly.
+
+Build for the deployment host's architecture, or build and push a multi-platform
+image to your own registry (replace the example registry name):
+
+```bash
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t YOUR_REGISTRY/cpp-backend:latest --push .
+```
+
+To run that published image, change `image:` in `compose.yaml` to the registry tag
+and use `docker compose pull && docker compose up -d --no-build`.
+Inspect local image size with `docker image inspect cpp-backend:local --format '{{.Size}}'`
+(bytes, uncompressed). Rebuild periodically with `docker compose build --pull --no-cache`
+to pick up Alpine runtime updates.
+
 ## 1. Install dependencies on your Mac
 
 ```bash
@@ -103,7 +153,7 @@ Saving source recompiles and restarts; saving the JSON or docs restarts so their
 - `users.updated_at` is set explicitly on PUT; the schema's DEFAULT alone does not update it. Products have no updated_at column, so none is assumed.
 - Emails retain your database's existing case-sensitive uniqueness behavior.
 - Timestamps are PostgreSQL text; names/strings have byte-length validation. Email validation is a basic format check, not verification.
-- This is a local development starter, bound to 127.0.0.1. Authentication, authorization, request tracing, rate limits, TLS ingress, and deployment/CI integration must be added before exposing user data remotely.
+- Native runs bind to 127.0.0.1 by default; `LISTEN_HOST` overrides this, and the Docker image sets it to 0.0.0.0. Authentication, authorization, request tracing, rate limits, TLS ingress, and CI integration must be added before exposing user data remotely.
 - Swagger does not implement routes; changes to routes or validation must also be reflected in openapi.json.
 
 ## Verification

@@ -196,6 +196,11 @@ int main() {
         drogon::app().registerHandler("/ready", [&database](const drogon::HttpRequestPtr&, Callback&& cb) {
             query(database, "SELECT 'ok'::text AS database", {}, std::move(cb));
         }, {drogon::Get});
-        drogon::app().setClientMaxBodySize(64 * 1024).addListener("127.0.0.1", 8080).setThreadNum(2).run();
+        const char* listenHost = std::getenv("LISTEN_HOST");
+        const char* uploadPath = std::getenv("UPLOAD_PATH");
+        if (uploadPath && *uploadPath) drogon::app().setUploadPath(uploadPath);
+        drogon::app().setClientMaxBodySize(64 * 1024)
+            .addListener(listenHost && *listenHost ? listenHost : "127.0.0.1", 8080)
+            .setThreadNum(2).run();
     } catch (const std::exception& exception) { std::cerr << exception.what() << '\n'; return 1; }
 }

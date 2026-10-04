@@ -1,0 +1,7 @@
+**
+!Dockerfile
+!CMakeLists.txt
+!src/
+!src/**
+!public/
+!public/**
